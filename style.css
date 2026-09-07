@@ -1,0 +1,387 @@
+/* ==========================================================
+   tasque — stylesheet
+   Palette: dark "athletic app" base (near-black) with a
+   Strava-style burnt-orange primary accent, and green reserved
+   specifically for the "task completed" state — so the two
+   accents each carry a distinct meaning rather than competing.
+
+   Built on a FLUID scale: spacing, type, and layout widths use
+   clamp() so the design scales continuously across phone,
+   tablet, and desktop instead of jumping at fixed breakpoints.
+
+   Sections: variables/fluid scale, base layout, form,
+   task list, delete-all, structural breakpoints, accessibility
+   ========================================================== */
+
+:root{
+  /* ---- Colors: dark base ---- */
+  --bg-0: #121110;          /* deepest background */
+  --bg-1: #1a1815;          /* base gradient warm-black */
+  --bg-2: #17140f;
+  --surface: rgba(255,255,255,0.055);
+  --surface-strong: rgba(255,255,255,0.09);
+  --surface-border: rgba(255,255,255,0.10);
+  --ink: #F3EFE8;           /* primary text, warm off-white */
+  --ink-soft: #9C948A;      /* secondary text */
+
+  /* ---- Colors: accents ---- */
+  --accent: #FC4C02;        /* Strava-style burnt orange — primary action */
+  --accent-2: #FF7A33;      /* lighter orange for gradients/hover */
+  --success: #37D67A;       /* green — reserved for "done" state only */
+  --error: #FF5C5C;         /* distinct red, not to be confused with accent */
+
+  /* ---- Fluid spacing scale ---- */
+  --space-2xs: clamp(4px, 1vw, 6px);
+  --space-xs:  clamp(6px, 1.5vw, 10px);
+  --space-sm:  clamp(10px, 2.2vw, 14px);
+  --space-md:  clamp(14px, 3vw, 22px);
+  --space-lg:  clamp(20px, 5vw, 32px);
+  --space-xl:  clamp(24px, 7vw, 56px);
+
+  /* ---- Fluid radii ---- */
+  --radius-lg: clamp(14px, 2.5vw, 20px);
+  --radius-md: clamp(10px, 2vw, 14px);
+
+  /* ---- Fluid type scale ---- */
+  --fs-h1:    clamp(1.4rem, 1rem + 2.4vw, 2.1rem);
+  --fs-tag:   clamp(0.8rem, 0.72rem + 0.4vw, 0.92rem);
+  --fs-body:  clamp(0.85rem, 0.78rem + 0.3vw, 0.95rem);
+  --fs-label: clamp(0.9rem, 0.85rem + 0.2vw, 1rem);
+  --fs-small: clamp(0.72rem, 0.68rem + 0.2vw, 0.82rem);
+  --fs-count: clamp(0.7rem, 0.66rem + 0.2vw, 0.8rem);
+
+  /* ---- Fluid app width ---- */
+  --app-width: min(94vw, 560px);
+}
+
+*{ box-sizing: border-box; }
+
+html{
+  overflow-x: hidden;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  min-height: 100dvh;
+  width:100%;
+  font-family:'Inter', sans-serif;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(252, 76, 2, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 88% 20%, rgba(55, 214, 122, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(252, 76, 2, 0.08) 0%, transparent 55%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-0) 55%, var(--bg-2));
+  background-attachment: fixed;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding: var(--space-xl) var(--space-md);
+  padding-left: max(var(--space-md), env(safe-area-inset-left));
+  padding-right: max(var(--space-md), env(safe-area-inset-right));
+  padding-bottom: max(var(--space-xl), env(safe-area-inset-bottom));
+}
+
+/* Decorative floating orbs (background only) */
+.orb{
+  position:fixed;
+  border-radius:50%;
+  filter: blur(2px);
+  opacity:0.35;
+  z-index:0;
+  pointer-events:none;
+}
+.orb.o1{ width:clamp(70px,10vw,120px); height:clamp(70px,10vw,120px); background: linear-gradient(135deg, var(--accent), transparent); top:8%; left:6%; }
+.orb.o2{ width:clamp(50px,7vw,80px); height:clamp(50px,7vw,80px); background: linear-gradient(135deg, var(--success), transparent); bottom:10%; right:10%; }
+.orb.o3{ width:clamp(40px,5vw,60px); height:clamp(40px,5vw,60px); background: linear-gradient(135deg, var(--accent-2), transparent); top:65%; left:4%; }
+
+/* ---------- Layout ---------- */
+
+.app{
+  position:relative;
+  z-index:1;
+  width: var(--app-width);
+}
+
+.titlecard{
+  margin-bottom: var(--space-lg);
+  padding: 0 var(--space-2xs);
+}
+
+.titlecard h1{
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size: var(--fs-h1);
+  margin: 0 0 4px 0;
+  background: linear-gradient(100deg, var(--accent), var(--accent-2) 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.2px;
+}
+
+.titlecard p{
+  margin:0;
+  color: var(--ink-soft);
+  font-size: var(--fs-tag);
+}
+
+.panel{
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* ---------- Form (create task) ---------- */
+
+form#task-form{
+  display:flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+#task-input{
+  flex: 1 1 min(220px, 100%);
+  min-width: 0;
+  border: 1.5px solid rgba(252, 76, 2, 0.25);
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-family:'Inter', sans-serif;
+  font-size: var(--fs-label);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#task-input::placeholder{ color: #6E675E; }
+
+#task-input:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(252, 76, 2, 0.16);
+}
+
+#task-input.shake{
+  animation: shake 0.4s ease;
+  border-color: var(--error);
+}
+
+@keyframes shake{
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+#add-btn{
+  flex: 1 1 96px;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  min-height: 44px;
+  font-family:'Quicksand', sans-serif;
+  font-weight: 600;
+  font-size: var(--fs-label);
+  color: #1A0D06;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 16px rgba(252, 76, 2, 0.35);
+}
+
+#add-btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 20px rgba(252, 76, 2, 0.45); }
+#add-btn:active{ transform: translateY(0); }
+
+.error-msg{
+  color: var(--error);
+  font-size: var(--fs-small);
+  margin: var(--space-xs) 2px 0 2px;
+  min-height: 1em;
+  font-weight: 500;
+}
+
+/* ---------- Task list ---------- */
+
+.list-header{
+  display:flex;
+  flex-wrap: wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap: var(--space-2xs) var(--space-sm);
+  padding: 0 4px var(--space-md) 4px;
+}
+
+.list-header h2{
+  font-family:'Quicksand', sans-serif;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--ink);
+  margin:0;
+}
+
+#task-count{
+  font-size: var(--fs-count);
+  color: var(--ink-soft);
+  background: rgba(252, 76, 2, 0.14);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+#task-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap: var(--space-sm);
+}
+
+.task-item{
+  display:flex;
+  align-items:center;
+  gap: var(--space-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  animation: pop-in 0.25s ease;
+}
+
+@keyframes pop-in{
+  from{ opacity:0; transform: translateY(-6px) scale(0.98); }
+  to{ opacity:1; transform: translateY(0) scale(1); }
+}
+
+.task-check{
+  flex-shrink:0;
+  width: clamp(22px, 4vw, 26px);
+  height: clamp(22px, 4vw, 26px);
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: transparent;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.task-check.checked{
+  background: var(--success);
+  border-color: transparent;
+}
+
+.task-check svg{ width:45%; height:45%; opacity:0; transition: opacity 0.15s ease; }
+.task-check.checked svg{ opacity:1; stroke: #0D2B18; }
+
+.task-text{
+  flex:1;
+  min-width: 0;
+  font-size: var(--fs-body);
+  word-break: break-word;
+  transition: color 0.2s ease;
+}
+
+.task-text.done{
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.task-delete{
+  flex-shrink:0;
+  border:none;
+  background: transparent;
+  cursor:pointer;
+  color: #7A736A;
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  line-height:1;
+  padding: var(--space-2xs) var(--space-xs);
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.task-delete:hover{ background: rgba(255, 92, 92, 0.12); color: var(--error); }
+
+.empty-state{
+  text-align:center;
+  padding: var(--space-lg) var(--space-sm);
+  color: var(--ink-soft);
+  font-size: var(--fs-body);
+}
+
+.empty-state .emoji{
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  display:block;
+  margin-bottom: 6px;
+}
+
+/* ---------- Delete All (async action) ---------- */
+
+.footer-row{
+  display:flex;
+  justify-content:flex-end;
+}
+
+#delete-all-btn{
+  border: 1.5px solid rgba(255, 92, 92, 0.35);
+  background: rgba(255,255,255,0.03);
+  color: var(--error);
+  font-family:'Quicksand', sans-serif;
+  font-weight: 600;
+  font-size: var(--fs-small);
+  padding: var(--space-sm) var(--space-md);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: var(--space-xs);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+#delete-all-btn:hover{ background: rgba(255, 92, 92, 0.1); }
+#delete-all-btn:disabled{ opacity:0.75; cursor: default; }
+
+.spinner{
+  width: 14px;
+  height: 14px;
+  border-radius:50%;
+  border: 2px solid rgba(255, 92, 92, 0.25);
+  border-top-color: var(--error);
+  animation: spin 0.7s linear infinite;
+  display:none;
+}
+
+#delete-all-btn.loading .spinner{ display:inline-block; }
+#delete-all-btn.loading .btn-label{ font-size:0; }
+#delete-all-btn.loading .btn-label::after{ content: "Clearing…"; font-size: var(--fs-small); }
+
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ---------- Structural breakpoints ---------- */
+
+@media (max-width: 360px){
+  #task-input{ flex-basis: 100%; }
+  #add-btn{ flex-basis: 100%; }
+  .footer-row{ justify-content: stretch; }
+  #delete-all-btn{ width: 100%; }
+}
+
+@media (min-width: 1024px){
+  :root{ --app-width: min(90vw, 600px); }
+}
+
+/* ---------- Accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}
