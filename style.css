@@ -1,17 +1,4 @@
-/* ==========================================================
-   tasque — stylesheet
-   Palette: dark "athletic app" base (near-black) with a
-   Strava-style burnt-orange primary accent, and green reserved
-   specifically for the "task completed" state — so the two
-   accents each carry a distinct meaning rather than competing.
 
-   Built on a FLUID scale: spacing, type, and layout widths use
-   clamp() so the design scales continuously across phone,
-   tablet, and desktop instead of jumping at fixed breakpoints.
-
-   Sections: variables/fluid scale, base layout, form,
-   task list, delete-all, structural breakpoints, accessibility
-   ========================================================== */
 
 :root{
   /* ---- Colors: dark base ---- */
