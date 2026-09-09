@@ -1,23 +1,12 @@
 "use strict";
 
-/* ==========================================================
-   tasque — script.js
-   Sections:
-     1. State (single source of truth)
-     2. DOM references
-     3. Persistence (Local Storage)
-     4. Rendering
-     5. Task operations (add / toggle / delete)
-     6. Form handling + validation
-     7. Delete All (async, simulated loading)
-     8. Init
-   ========================================================== */
 
-/* ---------- 1. State ---------- */
+
+
 const STORAGE_KEY = "tasque:tasks";
 let tasks = [];
 
-/* ---------- 2. DOM references ---------- */
+
 const form = document.getElementById("task-form");
 const input = document.getElementById("task-input");
 const errorMsg = document.getElementById("error-msg");
@@ -26,7 +15,7 @@ const emptyState = document.getElementById("empty-state");
 const taskCount = document.getElementById("task-count");
 const deleteAllBtn = document.getElementById("delete-all-btn");
 
-/* ---------- 3. Persistence (Local Storage) ---------- */
+
 function loadTasks() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
