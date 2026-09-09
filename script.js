@@ -3,7 +3,7 @@
 
 
 
-const STORAGE_KEY = "tasque:tasks";
+const STORAGE_KEY = "task:tasks";
 let tasks = [];
 
 
