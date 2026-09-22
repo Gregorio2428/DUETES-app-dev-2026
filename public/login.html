@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in | Latch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="auth">
+
+  <aside class="panel">
+    <a class="wordmark" href="/login">
+      <svg viewBox="0 0 100 140" aria-hidden="true"><circle cx="50" cy="42" r="30"/><path d="M36 60h28l12 70H24z"/></svg>
+      Latch
+    </a>
+    <div>
+      <h1>Good to see you again.</h1>
+      <p>Log in to pick up where you left off.</p>
+    </div>
+    <svg class="keyhole-bg" viewBox="0 0 100 140" aria-hidden="true"><circle cx="50" cy="42" r="30"/><path d="M36 60h28l12 70H24z"/></svg>
+  </aside>
+
+  <main class="form-side">
+    <div class="form-wrap">
+      <h2>Log in</h2>
+      <p class="lede">Enter your username and password.</p>
+
+      <form id="login-form" novalidate>
+        <div class="alert" role="alert" hidden></div>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" aria-describedby="username-error">
+          <p class="field-error" id="username-error"></p>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error">
+            <button type="button" class="toggle-visibility" aria-pressed="false" aria-controls="password">Show</button>
+          </div>
+          <p class="field-error" id="password-error"></p>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Log in</button>
+      </form>
+
+      <p class="switch">New here? <a href="/signup">Create an account</a></p>
+    </div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>
