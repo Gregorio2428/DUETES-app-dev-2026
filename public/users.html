@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Users</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="nav"></div>
+  <main>
+    <h1>Users <span class="pill" id="count"></span></h1>
+    <p class="sub">Protected route: <code>GET /api/users</code></p>
+    <input id="search" placeholder="Search by username or bio..." />
+    <div class="grid" id="grid">Loading...</div>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    requireLogin();
+    renderNav("users");
+    const esc = (t) => { const d = document.createElement("div"); d.textContent = t; return d.innerHTML; };
+    let users = [];
+
+    function render(list) {
+      document.getElementById("grid").innerHTML = list.length ? list.map((u) => `
+        <div class="card user">
+          <div class="avatar sm">${esc(initial(u.username))}</div>
+          <div>
+            <h3>${esc(u.username)}${u.isYou ? '<span class="you">YOU</span>' : ""}</h3>
+            <p>${u.bio ? esc(u.bio) : '<span class="empty">No bio yet.</span>'}</p>
+            <p>Joined ${new Date(u.joinedAt).toLocaleDateString()}</p>
+          </div>
+        </div>`).join("") : '<p class="empty">No users match.</p>';
+    }
+
+    api("/api/users").then((data) => {
+      users = data.users;
+      document.getElementById("count").textContent = `${data.count} registered`;
+      render(users);
+    });
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      render(users.filter((u) => u.username.toLowerCase().includes(q) || u.bio.toLowerCase().includes(q)));
+    });
+  </script>
+</body>
+</html>

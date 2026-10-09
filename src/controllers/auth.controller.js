@@ -2,17 +2,19 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 
+const expiresIn = () => process.env.JWT_EXPIRES_IN || "1h"; // token lifetime, always set
+
 function signToken(user) {
   return jwt.sign(
     { userId: user.id },                       // payload: keep it small, no secrets
     process.env.JWT_SECRET,                    // the server-only secret
-    { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
+    { expiresIn: expiresIn() }
   );
 }
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, bio } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: "Name, email and password are required" });
@@ -20,12 +22,15 @@ exports.register = async (req, res, next) => {
     if (password.length < 8) {
       return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
+    if (bio && bio.length > 160) {
+      return res.status(400).json({ error: "Bio must be 160 characters or fewer" });
+    }
     if (User.findByEmail(email)) {
       return res.status(409).json({ error: "Email is already registered" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10); // never store plain passwords
-    User.create({ name, email, passwordHash });
+    User.create({ name, email, passwordHash, bio: (bio || "").trim() });
 
     res.status(201).json({ message: "Account created. You can log in now." });
   } catch (err) {
@@ -44,7 +49,7 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    res.json({ token: signToken(user) });
+    res.json({ token: signToken(user), expiresIn: expiresIn() });
   } catch (err) {
     next(err);
   }
