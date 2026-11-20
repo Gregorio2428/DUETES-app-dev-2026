@@ -236,48 +236,99 @@ export default function App() {
 
   return (
     <div className="broadsheet-container">
-      {/* Editorial Masthead with Top Ribbon */}
+      {/* Integrated Editorial Broadsheet Masthead */}
       <header className="masthead">
-        {/* Masthead Top Ribbon: Deep Midnight Ink (#0f172a) with warm gold (#fde68a) typography */}
-        <div className="masthead-ribbon">
-          <span>{formattedMastheadDate}</span>
-          <span>Vol. XXIV · Edition No. 11</span>
-          <span>The Independent Literary Press & Chronicle</span>
-        </div>
+        <div className="masthead-frame">
+          {/* Inner terracotta accent rule rendered via CSS ::before */}
 
-        <div className="masthead-brand">
-          <h1 className="masthead-title">The Dispatch</h1>
-          <p className="masthead-tagline">Final Exam Chronicle — Critical Essays, Dispatches & Letters</p>
-        </div>
+          {/* Flanking Masthead "Ears" (Newspaper Style) */}
+          <div className="masthead-ears-row">
+            {/* Left Ear: Date + Weather */}
+            <div className="masthead-ear ear-left">
+              <div className="ear-headline">{formattedMastheadDate}</div>
+              <div className="ear-sub">Global Edition · Weather: Clear</div>
+            </div>
 
-        <div className="masthead-bar">
-          <div className="masthead-status">
-            {user ? (
-              <>
-                <span>Signed in as <strong>{user.username}</strong></span>
-                {getRoleBadge(user.role)}
-              </>
-            ) : (
-              <span>Reader Edition · Public Access</span>
-            )}
+            {/* Center: SVG Editorial Press Seal / Fountain Pen Crest */}
+            <div className="masthead-crest-wrapper">
+              <svg className="press-crest-svg" width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Editorial Press Seal">
+                {/* Outer ring */}
+                <circle cx="28" cy="28" r="26" stroke="#d97706" strokeWidth="2" fill="none" />
+                <circle cx="28" cy="28" r="22" stroke="#c2410c" strokeWidth="1" fill="#faf8f5" />
+                {/* Fountain pen nib */}
+                <path d="M28 12 L26 28 L28 42 L30 28 Z" fill="#090d16" />
+                <path d="M24 26 L28 32 L32 26" stroke="#c2410c" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Ink dot */}
+                <circle cx="28" cy="20" r="2" fill="#d97706" />
+                {/* Decorative serifs */}
+                <line x1="22" y1="38" x2="34" y2="38" stroke="#d97706" strokeWidth="1.2" strokeLinecap="round" />
+                <line x1="24" y1="41" x2="32" y2="41" stroke="#c2410c" strokeWidth="0.8" strokeLinecap="round" />
+              </svg>
+              <span className="crest-est-label">Est. 2026</span>
+            </div>
+
+            {/* Right Ear: Volume + Price */}
+            <div className="masthead-ear ear-right">
+              <div className="ear-headline">Vol. XXIV · Issue No. 11</div>
+              <div className="ear-sub">Price: Open Access / Complimentary</div>
+            </div>
           </div>
 
-          <div className="masthead-actions">
-            {user ? (
-              <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
-                Sign Out
-              </button>
-            ) : (
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  setShowAuthDesk(!showAuthDesk);
-                  setAuthMsg({ text: '', type: '' });
-                }}
-              >
-                {showAuthDesk ? 'Close Press Desk' : 'Sign In / Register'}
-              </button>
-            )}
+          {/* Central Brand & Title with Flanking Ornamental Rules */}
+          <div className="masthead-brand">
+            <div className="masthead-title-container">
+              <div className="masthead-flank-rule rule-left">
+                <span className="flank-diamond">✦</span>
+              </div>
+              <h1 className="masthead-title">The Dispatch</h1>
+              <div className="masthead-flank-rule rule-right">
+                <span className="flank-diamond">✦</span>
+              </div>
+            </div>
+
+            {/* Engraved Tagline Ribbon */}
+            <div className="masthead-tagline-wrapper">
+              <span className="masthead-tagline-ribbon">
+                Final Exam Chronicle · Independent Essays, Dispatches & Peer Critiques
+              </span>
+            </div>
+          </div>
+
+          {/* Live Status & Action Bar */}
+          <div className="masthead-live-bar">
+            <div className="live-status-indicator">
+              <span className="pulse-dot" />
+              <span className="live-status-text">
+                <strong>MariaDB Active</strong> · Express Backend Live
+              </span>
+            </div>
+
+            <div className="masthead-docked-actions">
+              {user ? (
+                <>
+                  <div className="user-docked-meta">
+                    <span>Signed in as <strong>{user.username}</strong></span>
+                    {getRoleBadge(user.role)}
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="guest-docked-label">Reader Edition · Public Access</span>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setShowAuthDesk(!showAuthDesk);
+                      setAuthMsg({ text: '', type: '' });
+                    }}
+                  >
+                    {showAuthDesk ? 'Close Press Desk' : 'Sign In / Register'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
