@@ -1,0 +1,14 @@
+{
+  "name": "blog-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:auth": "npm --prefix auth-server run dev",
+    "dev:blog": "npm --prefix blog-server run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently -n \"AUTH,BLOG,FRONTEND\" -c \"blue,green,magenta\" \"npm run dev:auth\" \"npm run dev:blog\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
