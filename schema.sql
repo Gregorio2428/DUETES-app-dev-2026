@@ -54,12 +54,12 @@ INSERT INTO roles (id, role) VALUES
 ON DUPLICATE KEY UPDATE role = VALUES(role);
 
 -- Seed Initial Test Users (Password: password123 for all)
--- bcrypt hash for 'password123': $2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6
+-- bcrypt hash for 'password123': $2a$10$fovTPqpMqJD4.1P9YUF6UudUOnzqAOc3Lxr73ijAecMFhHf633J8.
 INSERT INTO users (id, email, username, password_hash, role_id, is_active) VALUES
-(1, 'admin@example.com', 'admin_user', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 3, 1),
-(2, 'author@example.com', 'author_one', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 2, 1),
-(3, 'author2@example.com', 'author_two', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 2, 1),
-(4, 'reader@example.com', 'reader_user', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 1, 1)
+(1, 'admin@example.com', 'admin_user', '$2a$10$fovTPqpMqJD4.1P9YUF6UudUOnzqAOc3Lxr73ijAecMFhHf633J8.', 3, 1),
+(2, 'author@example.com', 'author_one', '$2a$10$fovTPqpMqJD4.1P9YUF6UudUOnzqAOc3Lxr73ijAecMFhHf633J8.', 2, 1),
+(3, 'author2@example.com', 'author_two', '$2a$10$fovTPqpMqJD4.1P9YUF6UudUOnzqAOc3Lxr73ijAecMFhHf633J8.', 2, 1),
+(4, 'reader@example.com', 'reader_user', '$2a$10$fovTPqpMqJD4.1P9YUF6UudUOnzqAOc3Lxr73ijAecMFhHf633J8.', 1, 1)
 ON DUPLICATE KEY UPDATE email = VALUES(email);
 
 -- Seed Initial Test Post
