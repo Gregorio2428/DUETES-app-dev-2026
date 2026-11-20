@@ -1,21 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const authenticate = require('../middleware/authenticate');
+const authorize = require('../middleware/authorize');
 const {
   getAllPosts,
   getPostById,
+  getMyPosts,
   createPost,
   updatePost,
   deletePost
 } = require('../controllers/postController');
 
-// Public endpoints
+// Public routes
 router.get('/', getAllPosts);
+router.get('/me/posts', authenticate, getMyPosts);
 router.get('/:id', getPostById);
 
-// Protected endpoints (Token required)
-router.post('/', authenticate, createPost);
+// Protected routes
+router.post('/', authenticate, authorize('author', 'admin'), createPost);
 router.put('/:id', authenticate, updatePost);
-router.delete('/:id', authenticate, deletePost);
+router.delete('/:id', authenticate, authorize('admin'), deletePost);
 
 module.exports = router;

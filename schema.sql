@@ -1,33 +1,68 @@
--- MariaDB / MySQL Schema for Blog Platform Final Exam
+-- MariaDB / MySQL Schema strictly aligned with Final Exam - App Dev Rubric
 CREATE DATABASE IF NOT EXISTS blog_db;
 USE blog_db;
 
--- Users Table
-CREATE TABLE IF NOT EXISTS users (
+-- 1. Roles Table
+CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('user', 'admin') DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    role VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    encoder_id VARCHAR(50) NULL
 );
 
--- Posts Table
+-- 2. Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role_id INT NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- 3. Refresh Tokens Table
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash CHAR(64) UNIQUE NOT NULL,
+    expires_at DATETIME NOT NULL,
+    revoked_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 4. Posts Table
 CREATE TABLE IF NOT EXISTS posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    author_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    author_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Seed Initial Data (Password: password123)
--- bcrypt hash for 'password123': $2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6
-INSERT IGNORE INTO users (id, username, email, password, role) VALUES
-(1, 'admin', 'admin@example.com', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 'admin'),
-(2, 'johndoe', 'john@example.com', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 'user');
+-- Seed Required Roles: 'reader', 'author', 'admin'
+INSERT INTO roles (id, role) VALUES 
+(1, 'reader'),
+(2, 'author'),
+(3, 'admin')
+ON DUPLICATE KEY UPDATE role = VALUES(role);
 
-INSERT IGNORE INTO posts (id, title, content, author_id) VALUES
-(1, 'Welcome to the Final Exam Blog', 'This is a sample post verifying that MariaDB and the backend are connected correctly.', 1);
+-- Seed Initial Test Users (Password: password123 for all)
+-- bcrypt hash for 'password123': $2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6
+INSERT INTO users (id, email, username, password_hash, role_id, is_active) VALUES
+(1, 'admin@example.com', 'admin_user', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 3, 1),
+(2, 'author@example.com', 'author_one', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 2, 1),
+(3, 'author2@example.com', 'author_two', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 2, 1),
+(4, 'reader@example.com', 'reader_user', '$2a$10$wT80W3bB4mC2N/w.7Gv8U.gQYgQd1O3wI2rL/0hXoH7eHsmP.5Rz6', 1, 1)
+ON DUPLICATE KEY UPDATE email = VALUES(email);
+
+-- Seed Initial Test Post
+INSERT INTO posts (id, author_id, title, content) VALUES
+(1, 2, 'Welcome to the Blog', 'This is an initial post created by author_one for verification.')
+ON DUPLICATE KEY UPDATE title = VALUES(title);

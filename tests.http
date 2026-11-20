@@ -1,70 +1,209 @@
+### ====================================================================
 ### REST Client Test File for VS Code (REST Client Extension)
+### Final Exam - Blog Platform Endpoints Verification
+### ====================================================================
+
 @authHost = http://localhost:4000
 @blogHost = http://localhost:5000
 
-### -------------------------------------------------------------
-### AUTH SERVER ENDPOINTS (:4000)
-### -------------------------------------------------------------
+### --------------------------------------------------------------------
+### 1. REGISTER ENDPOINTS (reader, author, admin)
+### --------------------------------------------------------------------
 
-### 1. Register a new user
+### 1a. Register as Reader
 POST {{authHost}}/api/auth/register
 Content-Type: application/json
 
 {
-  "username": "examuser",
-  "email": "examuser@example.com",
-  "password": "password123"
+  "username": "reader_sample",
+  "email": "reader_sample@example.com",
+  "password": "password123",
+  "role": "reader"
 }
 
-### 2. Login as newly registered user (captures JWT token automatically)
-# @name login
+### 1b. Register as Author
+POST {{authHost}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "author_sample",
+  "email": "author_sample@example.com",
+  "password": "password123",
+  "role": "author"
+}
+
+### 1c. Register as Admin
+POST {{authHost}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin_sample",
+  "email": "admin_sample@example.com",
+  "password": "password123",
+  "role": "admin"
+}
+
+
+### --------------------------------------------------------------------
+### 2. LOGIN (Receiving accessToken & refreshToken)
+### --------------------------------------------------------------------
+
+### 2a. Login as Author (Seeds or Registered)
+# @name loginAuthor
 POST {{authHost}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "examuser@example.com",
+  "email": "author@example.com",
   "password": "password123"
 }
 
-### 3. Save auth token from login response
-@authToken = {{login.response.body.token}}
+### Variables from Author Login
+@authorAccessToken = {{loginAuthor.response.body.accessToken}}
+@authorRefreshToken = {{loginAuthor.response.body.refreshToken}}
 
-### 4. Verify Current User Token (/me)
-GET {{authHost}}/api/auth/me
-Authorization: Bearer {{authToken}}
+### 2b. Login as Another Author (Author 2 for ownership permission test)
+# @name loginAuthor2
+POST {{authHost}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "author2@example.com",
+  "password": "password123"
+}
+
+### Variable for Author 2
+@author2AccessToken = {{loginAuthor2.response.body.accessToken}}
+
+### 2c. Login as Reader
+# @name loginReader
+POST {{authHost}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "reader@example.com",
+  "password": "password123"
+}
+
+### Variable for Reader
+@readerAccessToken = {{loginReader.response.body.accessToken}}
+
+### 2d. Login as Admin
+# @name loginAdmin
+POST {{authHost}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Variable for Admin
+@adminAccessToken = {{loginAdmin.response.body.accessToken}}
 
 
-### -------------------------------------------------------------
-### BLOG SERVER ENDPOINTS (:5000)
-### -------------------------------------------------------------
+### --------------------------------------------------------------------
+### 3. REFRESH TOKEN (Exchanges refreshToken for a new accessToken)
+### --------------------------------------------------------------------
+POST {{authHost}}/api/auth/refresh
+Content-Type: application/json
 
-### 5. Get all blog posts (Public)
+{
+  "refreshToken": "{{authorRefreshToken}}"
+}
+
+
+### --------------------------------------------------------------------
+### 4. LOGOUT (Revokes refreshToken in DB)
+### --------------------------------------------------------------------
+POST {{authHost}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{authorRefreshToken}}"
+}
+
+
+### --------------------------------------------------------------------
+### 5. PUBLIC BLOG ENDPOINTS
+### --------------------------------------------------------------------
+
+### 5a. Public GET all posts
 GET {{blogHost}}/api/posts
 
-### 6. Get single blog post by ID (Public)
+### 5b. Public GET post by ID
 GET {{blogHost}}/api/posts/1
 
-### 7. Create a new blog post (Authenticated)
-# @name createPost
+
+### --------------------------------------------------------------------
+### 6. CREATE POST ROLE ENFORCEMENT
+### --------------------------------------------------------------------
+
+### 6a. Create post as Reader -> MUST RETURN 403 Forbidden
 POST {{blogHost}}/api/posts
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{readerAccessToken}}
 Content-Type: application/json
 
 {
-  "title": "Post Created from REST Client",
-  "content": "This post tests authenticated creation in the blog server."
+  "title": "Reader Trying to Post",
+  "content": "This should be rejected with 403 Forbidden."
 }
 
-### 8. Update blog post by ID (Author or Admin only)
-PUT {{blogHost}}/api/posts/1
-Authorization: Bearer {{authToken}}
+### 6b. Create post as Author -> MUST RETURN 201 Created
+# @name createdAuthorPost
+POST {{blogHost}}/api/posts
+Authorization: Bearer {{authorAccessToken}}
 Content-Type: application/json
 
 {
-  "title": "Updated Post Title",
-  "content": "Content updated via REST Client test."
+  "title": "Post by Author One",
+  "content": "This is legitimate content published by author_one."
 }
 
-### 9. Delete blog post by ID (Author or Admin only)
-DELETE {{blogHost}}/api/posts/2
-Authorization: Bearer {{authToken}}
+### Save Created Post ID
+@createdPostId = {{createdAuthorPost.response.body.postId}}
+
+
+### --------------------------------------------------------------------
+### 7. EDIT POST (OWNERSHIP ENFORCEMENT)
+### --------------------------------------------------------------------
+
+### 7a. Edit post as Another Author (Non-owner) -> MUST RETURN 403 Forbidden
+PUT {{blogHost}}/api/posts/{{createdPostId}}
+Authorization: Bearer {{author2AccessToken}}
+Content-Type: application/json
+
+{
+  "title": "Unauthorized Modification Attempt",
+  "content": "Should be rejected because author2 does not own this post."
+}
+
+### 7b. Edit post as Author (Owner) -> MUST RETURN 200 OK
+PUT {{blogHost}}/api/posts/{{createdPostId}}
+Authorization: Bearer {{authorAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "Updated by Owner (Author One)",
+  "content": "Successfully updated by the legitimate owner."
+}
+
+
+### --------------------------------------------------------------------
+### 8. DELETE POST (ADMIN ONLY RESTRICTION)
+### --------------------------------------------------------------------
+
+### 8a. Delete post as Author -> MUST RETURN 403 Forbidden
+DELETE {{blogHost}}/api/posts/{{createdPostId}}
+Authorization: Bearer {{authorAccessToken}}
+
+### 8b. Delete post as Admin -> MUST RETURN 200 OK
+DELETE {{blogHost}}/api/posts/{{createdPostId}}
+Authorization: Bearer {{adminAccessToken}}
+
+
+### --------------------------------------------------------------------
+### 9. GET /api/me/posts (Returns ONLY logged-in user's posts)
+### --------------------------------------------------------------------
+GET {{blogHost}}/api/me/posts
+Authorization: Bearer {{authorAccessToken}}

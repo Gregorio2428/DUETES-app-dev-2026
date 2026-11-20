@@ -32,6 +32,23 @@ const getPostById = async (req, res) => {
   }
 };
 
+// GET /api/me/posts (Returns only the logged-in user's posts)
+const getMyPosts = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT p.id, p.title, p.content, p.author_id, p.created_at, p.updated_at, u.username AS author_name 
+      FROM posts p 
+      JOIN users u ON p.author_id = u.id 
+      WHERE p.author_id = ?
+      ORDER BY p.created_at DESC
+    `, [req.user.id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /api/posts (author or admin only via authorize middleware)
 const createPost = async (req, res) => {
   const { title, content } = req.body;
   if (!title || !content) {
@@ -49,6 +66,7 @@ const createPost = async (req, res) => {
   }
 };
 
+// PUT /api/posts/:id (Post owner or admin)
 const updatePost = async (req, res) => {
   const { title, content } = req.body;
   const postId = req.params.id;
@@ -59,7 +77,6 @@ const updatePost = async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
 
-    // Author or Admin can update
     if (rows[0].author_id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden: You can only edit your own posts' });
     }
@@ -74,18 +91,14 @@ const updatePost = async (req, res) => {
   }
 };
 
+// DELETE /api/posts/:id (Admin only via authorize('admin') middleware)
 const deletePost = async (req, res) => {
   const postId = req.params.id;
 
   try {
-    const [rows] = await db.query('SELECT author_id FROM posts WHERE id = ?', [postId]);
+    const [rows] = await db.query('SELECT id FROM posts WHERE id = ?', [postId]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Post not found' });
-    }
-
-    // Author or Admin can delete
-    if (rows[0].author_id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden: You can only delete your own posts' });
     }
 
     await db.query('DELETE FROM posts WHERE id = ?', [postId]);
@@ -95,4 +108,4 @@ const deletePost = async (req, res) => {
   }
 };
 
-module.exports = { getAllPosts, getPostById, createPost, updatePost, deletePost };
+module.exports = { getAllPosts, getPostById, getMyPosts, createPost, updatePost, deletePost };

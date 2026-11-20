@@ -11,10 +11,12 @@ const PORT = process.env.PORT_AUTH || 4000;
 app.use(cors());
 app.use(express.json());
 
+// Support both /api/auth/* and direct root /* routing
 app.use('/api/auth', authRoutes);
+app.use('/', authRoutes);
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Auth server is running', port: PORT });
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'auth-server', port: PORT });
 });
 
 app.listen(PORT, () => {
