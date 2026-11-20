@@ -236,12 +236,13 @@ export default function App() {
 
   return (
     <div className="broadsheet-container">
-      {/* Editorial Masthead */}
+      {/* Editorial Masthead with Top Ribbon */}
       <header className="masthead">
-        <div className="masthead-folio">
+        {/* Masthead Top Ribbon: Deep Midnight Ink (#0f172a) with warm gold (#fde68a) typography */}
+        <div className="masthead-ribbon">
           <span>{formattedMastheadDate}</span>
-          <span>Vol. XXIV · No. 11</span>
-          <span>Independent Literary Press</span>
+          <span>Vol. XXIV · Edition No. 11</span>
+          <span>The Independent Literary Press & Chronicle</span>
         </div>
 
         <div className="masthead-brand">
@@ -268,7 +269,7 @@ export default function App() {
               </button>
             ) : (
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-primary btn-sm"
                 onClick={() => {
                   setShowAuthDesk(!showAuthDesk);
                   setAuthMsg({ text: '', type: '' });
@@ -396,7 +397,7 @@ export default function App() {
             <h1 className="reading-article-title">{readingPost.title}</h1>
             <div className="reading-article-byline">
               <span className="author-credit">By {readingPost.author_name || 'Staff Contributor'}</span>
-              <span className="byline-separator">/</span>
+              <span className="bullet-divider">•</span>
               {getRoleBadge(
                 user && user.username === readingPost.author_name
                   ? user.role
@@ -404,9 +405,9 @@ export default function App() {
                   ? 'admin'
                   : 'author'
               )}
-              <span className="byline-separator">/</span>
+              <span className="bullet-divider">•</span>
               <span>{formatEditorialDate(readingPost.created_at)}</span>
-              <span className="byline-separator">/</span>
+              <span className="bullet-divider">•</span>
               <span>{calculateReadingTime(readingPost.content)}</span>
             </div>
           </header>
@@ -439,7 +440,7 @@ export default function App() {
           </footer>
         </article>
       ) : (
-        /* Front Page & Stream View */
+        /* Front Page & Magazine Stream View */
         <>
           {/* Editorial Navigation Tabs */}
           <nav className="editorial-nav" aria-label="Sections">
@@ -537,14 +538,17 @@ export default function App() {
             </section>
           )}
 
-          {/* Post Stream Header */}
+          {/* Section Header */}
           <div className="stream-section-header">
             <h2 className="stream-section-title">
               {activeTab === 'mine' ? 'My Filed Dispatches' : 'Current Dispatches'}
             </h2>
+            <span style={{ fontSize: '0.88rem', color: 'var(--ink-muted)' }}>
+              {posts.length} {posts.length === 1 ? 'dispatch' : 'dispatches'} in archive
+            </span>
           </div>
 
-          {/* Post Stream Content */}
+          {/* Post Stream Content: Lead Dispatch + Magazine Story Grid */}
           <main className="post-stream">
             {loadingPosts ? (
               <div className="editorial-empty-state">
@@ -560,66 +564,139 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              posts.map((p) => {
-                const readingTime = calculateReadingTime(p.content);
-                const roleBadge = getRoleBadge(
-                  user && user.username === p.author_name
-                    ? user.role
-                    : p.author_name === 'admin_user'
-                    ? 'admin'
-                    : 'author'
-                );
+              <div className="editorial-magazine-layout">
+                {/* 1. Featured Lead Dispatch (First/Latest Post) */}
+                {(() => {
+                  const leadPost = posts[0];
+                  const leadReadingTime = calculateReadingTime(leadPost.content);
+                  const leadRoleBadge = getRoleBadge(
+                    user && user.username === leadPost.author_name
+                      ? user.role
+                      : leadPost.author_name === 'admin_user'
+                      ? 'admin'
+                      : 'author'
+                  );
 
-                return (
-                  <article className="post-dispatch-item" key={p.id}>
-                    <div className="post-dispatch-header">
-                      <h3
-                        className="post-dispatch-title"
-                        onClick={() => handleOpenSinglePost(p)}
+                  return (
+                    <article className="lead-dispatch-card" key={leadPost.id}>
+                      <div className="lead-dispatch-kicker">
+                        <span>★ Featured Lead Dispatch</span>
+                        <span className="dispatch-badge-id">Dispatch No. {leadPost.id}</span>
+                      </div>
+
+                      <h2
+                        className="lead-story-title"
+                        onClick={() => handleOpenSinglePost(leadPost)}
                         title="Read full dispatch"
                       >
-                        {p.title}
-                      </h3>
-                    </div>
+                        {leadPost.title}
+                      </h2>
 
-                    <div className="post-dispatch-byline">
-                      <span className="author-credit">By {p.author_name || 'Staff Contributor'}</span>
-                      <span className="byline-separator">/</span>
-                      {roleBadge}
-                      <span className="byline-separator">/</span>
-                      <span>{formatEditorialDate(p.created_at)}</span>
-                      <span className="byline-separator">/</span>
-                      <span>{readingTime}</span>
-                    </div>
+                      <div className="lead-story-byline">
+                        <span className="author-credit">By {leadPost.author_name || 'Staff Contributor'}</span>
+                        <span className="bullet-divider">•</span>
+                        {leadRoleBadge}
+                        <span className="bullet-divider">•</span>
+                        <span>{formatEditorialDate(leadPost.created_at)}</span>
+                        <span className="bullet-divider">•</span>
+                        <span>{leadReadingTime}</span>
+                      </div>
 
-                    <p className="post-dispatch-excerpt">
-                      {p.content && p.content.length > 240
-                        ? `${p.content.slice(0, 240)}…`
-                        : p.content}
-                    </p>
+                      <p className="lead-story-excerpt">
+                        {leadPost.content && leadPost.content.length > 380
+                          ? `${leadPost.content.slice(0, 380)}…`
+                          : leadPost.content}
+                      </p>
 
-                    <div className="post-dispatch-actions">
-                      <button
-                        className="read-dispatch-link"
-                        onClick={() => handleOpenSinglePost(p)}
-                      >
-                        Read full story →
-                      </button>
+                      <div className="lead-dispatch-footer">
+                        <button
+                          className="read-dispatch-link"
+                          onClick={() => handleOpenSinglePost(leadPost)}
+                        >
+                          Read Full Story →
+                        </button>
 
-                      {user && user.role === 'admin' && (
-                        <div className="post-admin-controls">
+                        {user && user.role === 'admin' && (
                           <button
                             className="btn btn-danger btn-sm"
-                            onClick={() => setPostToDelete(p)}
+                            onClick={() => setPostToDelete(leadPost)}
                           >
                             Delete
                           </button>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })
+                        )}
+                      </div>
+                    </article>
+                  );
+                })()}
+
+                {/* 2. Responsive 2-column or 3-column Magazine Story Grid for Subsequent Posts */}
+                {posts.length > 1 && (
+                  <div className="magazine-story-grid">
+                    {posts.slice(1).map((p) => {
+                      const readingTime = calculateReadingTime(p.content);
+                      const roleBadge = getRoleBadge(
+                        user && user.username === p.author_name
+                          ? user.role
+                          : p.author_name === 'admin_user'
+                          ? 'admin'
+                          : 'author'
+                      );
+
+                      return (
+                        <article className="grid-story-card" key={p.id}>
+                          <div className="grid-story-content">
+                            <div className="grid-story-kicker">
+                              <span>Dispatch No. {p.id}</span>
+                            </div>
+
+                            <h3
+                              className="grid-story-title"
+                              onClick={() => handleOpenSinglePost(p)}
+                              title="Read full dispatch"
+                            >
+                              {p.title}
+                            </h3>
+
+                            <div className="grid-story-byline">
+                              <span className="author-credit">By {p.author_name || 'Staff Contributor'}</span>
+                              <span className="bullet-divider">•</span>
+                              {roleBadge}
+                              <span className="bullet-divider">•</span>
+                              <span>{formatEditorialDate(p.created_at)}</span>
+                              <span className="bullet-divider">•</span>
+                              <span>{readingTime}</span>
+                            </div>
+
+                            <p className="grid-story-excerpt">
+                              {p.content && p.content.length > 190
+                                ? `${p.content.slice(0, 190)}…`
+                                : p.content}
+                            </p>
+                          </div>
+
+                          <div className="grid-story-footer">
+                            <button
+                              className="read-dispatch-link"
+                              onClick={() => handleOpenSinglePost(p)}
+                            >
+                              Read full story →
+                            </button>
+
+                            {user && user.role === 'admin' && (
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => setPostToDelete(p)}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
           </main>
         </>
