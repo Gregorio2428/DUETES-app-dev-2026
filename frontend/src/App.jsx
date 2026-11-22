@@ -28,6 +28,7 @@ export default function App() {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('reader');
   const [authMsg, setAuthMsg] = useState({ text: '', type: '' });
@@ -36,12 +37,46 @@ export default function App() {
   const [showDraftDesk, setShowDraftDesk] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [editingPost, setEditingPost] = useState(null);
   const [postMsg, setPostMsg] = useState({ text: '', type: '' });
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Admin Deletion Confirmation Modal State
   const [postToDelete, setPostToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const authenticatedFetch = async (url, options = {}) => {
+    const sendWithToken = (token) => fetch(url, {
+      ...options,
+      headers: { ...options.headers, Authorization: `Bearer ${token}` }
+    });
+
+    let response = await sendWithToken(accessToken);
+    if (response.status !== 401 || !refreshToken) return response;
+
+    try {
+      const refreshResponse = await fetch(`${AUTH_URL}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!refreshResponse.ok) throw new Error('Session expired');
+
+      const data = await refreshResponse.json();
+      setAccessToken(data.accessToken);
+      localStorage.setItem('accessToken', data.accessToken);
+      return await sendWithToken(data.accessToken);
+    } catch {
+      setAccessToken('');
+      setRefreshToken('');
+      setUser(null);
+      setActiveTab('all');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      return response;
+    }
+  };
 
   // Fetch posts from API (all or current user's posts)
   const fetchPosts = async () => {
@@ -50,7 +85,9 @@ export default function App() {
       const isMine = activeTab === 'mine' && accessToken;
       const url = isMine ? ME_POSTS_URL : BLOG_URL;
       const headers = isMine ? { Authorization: `Bearer ${accessToken}` } : {};
-      const res = await fetch(url, { headers });
+      const res = isMine
+        ? await authenticatedFetch(url, { headers })
+        : await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
         setPosts(Array.isArray(data) ? data : []);
@@ -87,7 +124,9 @@ export default function App() {
     e.preventDefault();
     setAuthMsg({ text: '', type: '' });
     const endpoint = isRegister ? `${AUTH_URL}/register` : `${AUTH_URL}/login`;
-    const payload = isRegister ? { username, email, password, role } : { email, password };
+    const payload = isRegister
+      ? { username, email, password, role }
+      : { identifier: loginIdentifier, password };
 
     try {
       const res = await fetch(endpoint, {
@@ -144,31 +183,66 @@ export default function App() {
     }
   };
 
-  // Create post handler
-  const handleCreatePost = async (e) => {
+  const canEditPost = (post) => Boolean(
+    user && (user.role === 'admin' || user.username === post.author_name)
+  );
+
+  const startNewPost = () => {
+    setEditingPost(null);
+    setTitle('');
+    setContent('');
+    setPostMsg({ text: '', type: '' });
+    setShowDraftDesk(true);
+  };
+
+  const startEditingPost = (post) => {
+    setEditingPost(post);
+    setTitle(post.title);
+    setContent(post.content);
+    setPostMsg({ text: '', type: '' });
+    setReadingPost(null);
+    setShowDraftDesk(true);
+  };
+
+  const cancelDraft = () => {
+    setEditingPost(null);
+    setTitle('');
+    setContent('');
+    setShowDraftDesk(false);
+  };
+
+  // Create or update a post
+  const handleSavePost = async (e) => {
     e.preventDefault();
     setPostMsg({ text: '', type: '' });
     setIsPublishing(true);
 
     try {
-      const res = await fetch(BLOG_URL, {
-        method: 'POST',
+      const res = await authenticatedFetch(
+        editingPost ? `${BLOG_URL}/${editingPost.id}` : BLOG_URL,
+        {
+        method: editingPost ? 'PUT' : 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ title, content })
-      });
+        }
+      );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to publish dispatch');
+      if (!res.ok) throw new Error(data.error || 'Failed to save dispatch');
 
       setTitle('');
       setContent('');
-      setPostMsg({ text: 'Dispatch published to the public record.', type: 'success' });
+      setEditingPost(null);
+      setShowDraftDesk(false);
+      setPostMsg({
+        text: editingPost ? 'Dispatch updated successfully.' : 'Dispatch published to the public record.',
+        type: 'success'
+      });
       fetchPosts();
       setTimeout(() => setPostMsg({ text: '', type: '' }), 4000);
     } catch (err) {
-      setPostMsg({ text: err.message, type: 'error' });
+      setPostMsg({ text: err.message || 'Failed to save dispatch', type: 'error' });
     } finally {
       setIsPublishing(false);
     }
@@ -180,9 +254,9 @@ export default function App() {
     setIsDeleting(true);
 
     try {
-      const res = await fetch(`${BLOG_URL}/${postToDelete.id}`, {
+      const res = await authenticatedFetch(`${BLOG_URL}/${postToDelete.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: {}
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to remove dispatch');
@@ -266,12 +340,6 @@ export default function App() {
               </svg>
               <span className="crest-est-label">Est. 2026</span>
             </div>
-
-            {/* Right Ear: Volume + Price */}
-            <div className="masthead-ear ear-right">
-              <div className="ear-headline">Vol. XXIV · Issue No. 11</div>
-              <div className="ear-sub">Price: Open Access / Complimentary</div>
-            </div>
           </div>
 
           {/* Central Brand & Title with Flanking Ornamental Rules */}
@@ -294,15 +362,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Live Status & Action Bar */}
+          {/* Account Action Bar */}
           <div className="masthead-live-bar">
-            <div className="live-status-indicator">
-              <span className="pulse-dot" />
-              <span className="live-status-text">
-                <strong>MariaDB Active</strong> · Express Backend Live
-              </span>
-            </div>
-
             <div className="masthead-docked-actions">
               {user ? (
                 <>
@@ -387,13 +448,17 @@ export default function App() {
               )}
 
               <div className="auth-form-group">
-                <label htmlFor="auth-email">Correspondence Email</label>
+                <label htmlFor="auth-identifier">
+                  {isRegister ? 'Correspondence Email' : 'Username or Email'}
+                </label>
                 <input
-                  id="auth-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="editor@press.org"
+                  id="auth-identifier"
+                  type={isRegister ? 'email' : 'text'}
+                  value={isRegister ? email : loginIdentifier}
+                  onChange={(e) => isRegister
+                    ? setEmail(e.target.value)
+                    : setLoginIdentifier(e.target.value)}
+                  placeholder={isRegister ? 'editor@press.org' : 'Your username or email'}
                   required
                 />
               </div>
@@ -480,14 +545,24 @@ export default function App() {
               ← Return to Front Page
             </button>
 
-            {user && user.role === 'admin' && (
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => setPostToDelete(readingPost)}
-              >
-                Delete Dispatch (Admin)
-              </button>
-            )}
+            <div className="reading-article-actions">
+              {canEditPost(readingPost) && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => startEditingPost(readingPost)}
+                >
+                  Edit Dispatch
+                </button>
+              )}
+              {user && user.role === 'admin' && (
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => setPostToDelete(readingPost)}
+                >
+                  Delete Dispatch (Admin)
+                </button>
+              )}
+            </div>
           </footer>
         </article>
       ) : (
@@ -517,7 +592,7 @@ export default function App() {
             {user && ['author', 'admin'].includes(user.role) && (
               <button
                 className="nav-desk-action"
-                onClick={() => setShowDraftDesk(!showDraftDesk)}
+                onClick={() => showDraftDesk ? cancelDraft() : startNewPost()}
               >
                 {showDraftDesk ? 'Close Drafting Desk' : 'Compose Dispatch +'}
               </button>
@@ -528,7 +603,9 @@ export default function App() {
           {user && ['author', 'admin'].includes(user.role) && showDraftDesk && (
             <section className="drafting-desk" aria-labelledby="drafting-desk-title">
               <div className="drafting-desk-header">
-                <h2 id="drafting-desk-title" className="drafting-desk-title">The Writer's Desk</h2>
+                <h2 id="drafting-desk-title" className="drafting-desk-title">
+                  {editingPost ? 'Edit Dispatch' : "The Writer's Desk"}
+                </h2>
                 <div className="drafting-meta-stats">
                   <span>{draftWordCount} words</span> · <span>{draftEstTime}</span>
                 </div>
@@ -544,7 +621,7 @@ export default function App() {
                 </div>
               )}
 
-              <form onSubmit={handleCreatePost}>
+              <form onSubmit={handleSavePost}>
                 <div className="desk-form-group">
                   <label htmlFor="post-title" className="desk-label">Headline / Title</label>
                   <input
@@ -573,7 +650,7 @@ export default function App() {
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
-                    onClick={() => setShowDraftDesk(false)}
+                    onClick={cancelDraft}
                   >
                     Cancel Draft
                   </button>
@@ -582,7 +659,9 @@ export default function App() {
                     className="btn btn-primary"
                     disabled={isPublishing}
                   >
-                    {isPublishing ? 'Publishing Story...' : 'Publish Story'}
+                    {isPublishing
+                      ? (editingPost ? 'Saving Changes...' : 'Publishing Story...')
+                      : (editingPost ? 'Save Changes' : 'Publish Story')}
                   </button>
                 </div>
               </form>
@@ -675,6 +754,14 @@ export default function App() {
                             Delete
                           </button>
                         )}
+                        {canEditPost(leadPost) && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => startEditingPost(leadPost)}
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
                     </article>
                   );
@@ -739,6 +826,14 @@ export default function App() {
                                 onClick={() => setPostToDelete(p)}
                               >
                                 Delete
+                              </button>
+                            )}
+                            {canEditPost(p) && (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => startEditingPost(p)}
+                              >
+                                Edit
                               </button>
                             )}
                           </div>

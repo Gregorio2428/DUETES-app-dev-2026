@@ -3,15 +3,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../../db');
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+  throw new Error('JWT_SECRET must be configured with at least 32 characters');
+}
+
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const register = async (req, res) => {
   const { username, email, password, role } = req.body;
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: 'Username, email, and password are required' });
+  if (!username || !email || !password || !role) {
+    return res.status(400).json({ error: 'Username, email, password, and role are required' });
   }
 
-  const selectedRole = ['reader', 'author', 'admin'].includes(role) ? role : 'reader';
+  if (!['reader', 'author', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+  const selectedRole = role;
 
   try {
     const [existing] = await db.query(
@@ -46,9 +54,10 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+  const { username, email, identifier, password } = req.body;
+  const loginIdentifier = identifier || username || email;
+  if (!loginIdentifier || !password) {
+    return res.status(400).json({ error: 'Username or email and password are required' });
   }
 
   try {
@@ -56,8 +65,8 @@ const login = async (req, res) => {
       SELECT u.id, u.username, u.email, u.password_hash, u.is_active, r.role AS role_name
       FROM users u
       JOIN roles r ON u.role_id = r.id
-      WHERE u.email = ?
-    `, [email]);
+      WHERE u.username = ? OR u.email = ?
+    `, [loginIdentifier, loginIdentifier]);
 
     if (rows.length === 0 || !rows[0].is_active) {
       return res.status(401).json({ error: 'Invalid credentials or account inactive' });
@@ -72,7 +81,7 @@ const login = async (req, res) => {
     // Short-lived access token (15m)
     const accessToken = jwt.sign(
       { id: user.id, username: user.username, role: user.role_name },
-      process.env.JWT_SECRET || 'secret',
+      jwtSecret,
       { expiresIn: '15m' }
     );
 
@@ -124,7 +133,7 @@ const refresh = async (req, res) => {
     const user = rows[0];
     const newAccessToken = jwt.sign(
       { id: user.user_id, username: user.username, role: user.role_name },
-      process.env.JWT_SECRET || 'secret',
+      jwtSecret,
       { expiresIn: '15m' }
     );
 
@@ -160,7 +169,7 @@ const me = async (req, res) => {
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, jwtSecret);
     const [rows] = await db.query(`
       SELECT u.id, u.username, u.email, u.is_active, r.role AS role
       FROM users u
